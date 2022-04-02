@@ -1,0 +1,59 @@
+globalize_all_functions
+
+global array<var> consoleVars;
+global const string GAMEMODE_NSN = "nsn"
+
+void function NSNMode_Init()
+{
+	AddCallback_OnCustomGamemodesInit( CreateGamemodeNSN )
+	AddCallback_OnRegisteringCustomNetworkVars( NSNRegisterNetworkVars )
+}
+
+
+void function CreateGamemodeNSN()
+{
+ 	GameMode_Create( GAMEMODE_NSN )
+	GameMode_SetName( GAMEMODE_NSN, "#GAMEMODE_NSN" )
+	GameMode_SetDesc( GAMEMODE_NSN, "#PL_nsn_desc" )
+	GameMode_SetGameModeAnnouncement( GAMEMODE_NSN, "ffa_modeDesc" )
+	GameMode_SetDefaultTimeLimits( GAMEMODE_NSN, 15, 0.0 )
+	GameMode_AddScoreboardColumnData( GAMEMODE_NSN, "#SCOREBOARD_SCORE", PGS_ASSAULT_SCORE, 2 )
+	GameMode_AddScoreboardColumnData( GAMEMODE_NSN, "#SCOREBOARD_PILOT_KILLS", PGS_PILOT_KILLS, 2 )
+	GameMode_AddScoreboardColumnData( GAMEMODE_NSN, "#SCOREBOARD_PICKPOCKETEDS", PGS_TITAN_KILLS, 2 )
+	GameMode_SetColor( GAMEMODE_NSN, [147, 204, 57, 255] )
+
+	AddPrivateMatchMode( GAMEMODE_NSN ) // add to private lobby modes
+	AddPrivateMatchModeSettingEnum( "#PL_nsn", "nsn_reset_pulse_blade_cooldown_on_pulse_blade_kill", [ "Disabled", "Enabled" ], "1"  )
+	AddPrivateMatchModeSettingEnum( "#PL_nsn", "nsn_softball_enabled", [ "False", "True" ], "0"  )
+	AddPrivateMatchModeSettingArbitrary( "#PL_nsn", "nsn_softball_kill_value", "10" )
+	AddPrivateMatchModeSettingArbitrary( "#PL_nsn", "nsn_wme_kill_value", "10" )
+	AddPrivateMatchModeSettingArbitrary( "#PL_nsn", "nsn_offhand_kill_value", "10" )
+	AddPrivateMatchModeSettingArbitrary( "#PL_nsn", "nsn_reset_kill_value", "5" )
+	AddPrivateMatchModeSettingArbitrary( "#PL_nsn", "nsn_melee_kill_value", "5" )
+	
+
+	GameMode_SetDefaultScoreLimits( GAMEMODE_NSN, 300, 0 )
+
+	#if SERVER
+		GameMode_AddServerInit( GAMEMODE_NSN, NSN_Init )
+		GameMode_AddServerInit( GAMEMODE_NSN, GamemodeFFAShared_Init )
+		GameMode_SetPilotSpawnpointsRatingFunc( GAMEMODE_NSN, RateSpawnpoints_Generic )
+		GameMode_SetTitanSpawnpointsRatingFunc( GAMEMODE_NSN, RateSpawnpoints_Generic )
+	#elseif CLIENT
+		GameMode_AddClientInit( GAMEMODE_NSN, ClGameModeNSN_Init )
+		GameMode_AddClientInit( GAMEMODE_NSN, GamemodeFFAShared_Init )
+		GameMode_AddClientInit( GAMEMODE_NSN, ClGamemodeFFA_Init )
+	#endif
+	#if !UI
+		GameMode_SetScoreCompareFunc( GAMEMODE_NSN, CompareAssaultScore )
+		GameMode_AddSharedInit( GAMEMODE_NSN, GamemodeFFA_Dialogue_Init )
+	#endif
+}
+
+void function NSNRegisterNetworkVars()
+{
+	if ( GAMETYPE != GAMEMODE_NSN )
+		return
+	Remote_RegisterFunction( "ServerCallback_AnnouncePickpocketed" )
+	Remote_RegisterFunction( "ServerCallback_AnnounceKillLeaderPickpocketed" )
+}
